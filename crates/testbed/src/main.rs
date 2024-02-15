@@ -502,6 +502,8 @@ async fn complete_holes(
                 .slice(hole.cursor.character as usize..)
                 .len_chars()
             - 1;
+        let removed = file_content.slice(hole_start..hole_end);
+        debug!("Removing: {} from hole: {}", removed, hole.to_string());
         file_content.remove(hole_start..hole_end);
 
         let uri = Url::parse(&format!("file:/{file_path_str}"))?;
@@ -534,6 +536,7 @@ async fn complete_holes(
             })
             .await?;
 
+        debug!("Adding: {} for hole: {}", &result.completions[0].generated_text, hole.to_string());
         file_content.insert(hole_start, &result.completions[0].generated_text);
         let mut file = OpenOptions::new()
             .write(true)

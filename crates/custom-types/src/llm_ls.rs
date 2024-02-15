@@ -80,6 +80,9 @@ pub enum Backend {
     Tgi {
         url: String,
     },
+    WatsonX {
+        url: String,
+    },
 }
 
 impl Default for Backend {

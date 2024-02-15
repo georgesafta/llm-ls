@@ -151,6 +151,45 @@ fn parse_openai_text(text: &str) -> Result<Vec<Generation>> {
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct WatsonXGenerationResult {
+    generated_text: String,
+}
+
+impl From<WatsonXGenerationResult> for Generation {
+    fn from(value: WatsonXGenerationResult) -> Self {
+        Generation {
+            generated_text: value.generated_text,
+        }
+    }
+}
+
+
+#[derive(Debug, Deserialize)]
+struct WatsonXGeneration {
+    results: Vec<WatsonXGenerationResult>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum WatsonXAPIResponse {
+    Generation(WatsonXGeneration),
+    Error(APIError),
+}
+
+fn parse_watsonx_text(text: &str) -> Result<Vec<Generation>> {
+    match serde_json::from_str(text)? {
+        WatsonXAPIResponse::Generation(gen) => {
+            Ok(gen.results.into_iter().map(|x| x.into()).collect())
+        }
+        WatsonXAPIResponse::Error(err) => Err(Error::WatsonX(err)),
+    }
+}
+
+fn build_watsonx_headers(api_token: Option<&String>, ide: Ide) -> Result<HeaderMap> {
+    build_tgi_headers(api_token, ide)
+}
+
 pub(crate) fn build_body(
     backend: &Backend,
     model: String,
@@ -172,6 +211,10 @@ pub(crate) fn build_body(
             request_body.insert("model".to_owned(), Value::String(model));
             request_body.insert("stream".to_owned(), Value::Bool(false));
         }
+        Backend::WatsonX { .. } => {
+            request_body.insert("input".to_owned(), Value::String(prompt));
+            request_body.insert("model_id".to_owned(), Value::String(model));
+        }
     };
     request_body
 }
@@ -186,6 +229,7 @@ pub(crate) fn build_headers(
         Backend::Ollama { .. } => Ok(build_ollama_headers()),
         Backend::OpenAi { .. } => build_openai_headers(api_token, ide),
         Backend::Tgi { .. } => build_tgi_headers(api_token, ide),
+        Backend::WatsonX { .. } => build_watsonx_headers(api_token, ide),
     }
 }
 
@@ -195,5 +239,6 @@ pub(crate) fn parse_generations(backend: &Backend, text: &str) -> Result<Vec<Gen
         Backend::Ollama { .. } => parse_ollama_text(text),
         Backend::OpenAi { .. } => parse_openai_text(text),
         Backend::Tgi { .. } => parse_tgi_text(text),
+        Backend::WatsonX { .. } => parse_watsonx_text(text),
     }
 }

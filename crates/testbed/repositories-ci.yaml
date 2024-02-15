@@ -6,7 +6,8 @@ fim:
   middle: <fim_middle>
   suffix: <fim_suffix>
 model: bigcode/starcoder
-backend: huggingface
+backend:
+  backend: huggingface
 request_body:
   max_new_tokens: 150
   temperature: 0.2

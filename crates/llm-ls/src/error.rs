@@ -33,6 +33,8 @@ pub enum Error {
     Ollama(crate::APIError),
     #[error("openai error: {0}")]
     OpenAI(crate::backend::OpenAIError),
+    #[error("watsonx error: {0}")]
+    WatsonX(crate::APIError),
     #[error("index out of bounds: {0}")]
     OutOfBoundIndexing(usize),
     #[error("line out of bounds: {0}")]
